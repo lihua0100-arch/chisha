@@ -397,6 +397,11 @@ class Planner:
                 if dish_hits(d, word):
                     w *= 4
             self.weight[d[0]] = w
+        # 爱吃的里有牛羊肉/鱼虾/排骨时，改善的钱优先花在它上面，别的贵菜少排
+        if any(self.weight[d[0]] > 1 and any(i in PREMIUM for i in d[3]) for d in dishes):
+            for d in dishes:
+                if self.weight[d[0]] == 1 and any(i in PREMIUM for i in d[3]):
+                    self.weight[d[0]] = 0.25
         seed = a.seed if a.seed is not None else int(hashlib.sha256(
             json.dumps([a.budget, a.days, a.like, a.dislike, a.meals, a.people, str(a.start)]).encode()).hexdigest()[:8], 16)
         self.rng = random.Random(seed)
@@ -1249,6 +1254,14 @@ def cmd_plan(a):
         print("注意：" + warn)
     if pl.unmatched_dislike:
         print("这些忌口在菜库里没有对应的菜，不用排除：%s" % "、".join(pl.unmatched_dislike))
+    for w in pl.likes:
+        if w in pl.unmatched_like:
+            continue
+        hits = ["%s%s" % (dates[i].strftime("%-m/%-d"), m[0])
+                for i, day in enumerate(plan) for m, lst in day.items()
+                if any(dish_hits(M_BY[x], w) for x in lst)]
+        print("爱吃的「%s」：%d 顿里排了 %d 顿%s" % (w, sum(len(day) for day in plan), len(hits),
+                                           "（%s）" % "、".join(hits) if hits else ""))
     if pl.unmatched_like:
         print("这些爱吃的菜库里没有，没能多排：%s" % "、".join(pl.unmatched_like))
     if pl.cond_notes:
