@@ -398,7 +398,8 @@ class Planner:
                     w *= 4
             self.weight[d[0]] = w
         # 爱吃的里有牛羊肉/鱼虾/排骨时，改善的钱优先花在它上面，别的贵菜少排
-        if any(self.weight[d[0]] > 1 and any(i in PREMIUM for i in d[3]) for d in dishes):
+        self.likes_premium = any(self.weight[d[0]] > 1 and any(i in PREMIUM for i in d[3]) for d in dishes)
+        if self.likes_premium:
             for d in dishes:
                 if self.weight[d[0]] == 1 and any(i in PREMIUM for i in d[3]):
                     self.weight[d[0]] = 0.25
@@ -1175,6 +1176,10 @@ def cmd_plan(a):
     est_fixed = 0 if a.pantry else 60 + a.days * a.people * 0.9
     per = (a.budget - est_fixed) / a.days / a.people
     tier = max([0] + [i for i, (lo, _) in enumerate(TIERS) if per >= lo])
+    # 爱吃的是牛羊肉/鱼虾这类贵菜：每顿少一个菜，省下的钱多排爱吃的（用户定的：爱吃的多 > 菜的样数多）
+    pl.tier_dropped = pl.likes_premium and 1 < tier < len(TIERS) - 1
+    if pl.tier_dropped:
+        tier -= 1
     if a.shrunk:
         est_fixed = 0 if a.pantry else min_fixed
         per = (a.budget - est_fixed) / a.days / a.people
@@ -1243,7 +1248,7 @@ def cmd_plan(a):
     print("发给用户时在回复里单独一行写：MEDIA:%s" % path)
     print("时间：%s 到 %s，共 %d 天，%d 人，%s" % (dates[0], dates[-1], a.days, a.people,
                                          {1: "只排晚餐", 2: "午餐+晚餐", 3: "早中晚三餐"}[a.meals]))
-    print("结构：%s" % TIER_DESC[tier])
+    print("结构：%s%s" % (TIER_DESC[tier], "（为了多排爱吃的，每顿少排了一个菜）" if pl.tier_dropped and not a.shrunk else ""))
     print("花费：菜钱 %.0f + 米油调料 %.0f%s = %.0f 元，预算 %s，结余 %.0f，平均每天 %.1f 元" % (
         food, fsum, " + 水果 %.0f" % fruit if fruit else "", total, a.budget_text, a.budget - total, total / a.days))
     if total > a.budget:
