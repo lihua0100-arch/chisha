@@ -42,6 +42,23 @@ python3 meal_plan.py dishes
 
 生成的 Excel 有五张表：每日做饭、菜谱总览、采购清单、做法大全、单价表。
 
+## 手机网页版
+
+```bash
+python3 meal_plan.py web -o 菜谱.html   # 把当前菜谱生成一个单文件网页，手机浏览器直接打开
+```
+
+网页分四页：今天吃啥（按天切换、提前解冻提醒）、菜单、买菜（按周分组打勾）、做法（可搜索，每道菜有分步做法）。
+`meal_plan_template.html` 要和 `meal_plan.py` 放在同一个目录。
+
+想让 `plan` 生成后自动发布到自己的网站，写一个配置文件 `~/.config/chisha/publish.json`：
+
+```json
+{"base": "https://你的域名", "dirs": ["/网站根目录"]}
+```
+
+网页会写到 `<网站根目录>/m/<随机串>/index.html`，链接打印在输出最后，重新生成菜谱链接不变。没有这个配置就不发布。
+
 ## 存档位置
 
 菜谱存在 `$HERMES_HOME/workspace/meal-plans/`，没设 `HERMES_HOME` 时是 `~/.hermes/workspace/meal-plans/`。

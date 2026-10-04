@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>吃啥</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="吃啥">
+<style>
+/* 和 tripkit 一套苹果风：浅底白卡、毛玻璃底栏；主色番茄红 */
+:root{--bg:#f6f3ef;--card:#fff;--ink:#1d1d1f;--ink2:#3a3a3c;--mute:#8a8a8e;--line:rgba(60,60,67,.13);--fill:rgba(118,118,128,.1);
+  --accent:#d9502f;--ok:#34c759;--warn:#ff9500;--glass:rgba(250,248,246,.74);--shadow:0 1px 2px rgba(0,0,0,.03),0 6px 20px rgba(0,0,0,.05);--cover-dim:none;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--ink:#f5f5f7;--ink2:#d1d1d6;--mute:#98989f;--line:rgba(84,84,88,.5);--fill:rgba(118,118,128,.24);
+  --accent:#ec6a48;--ok:#30d158;--warn:#ff9f0a;--glass:rgba(22,22,24,.72);--shadow:none;--cover-dim:brightness(.72) saturate(.9);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--ink:#f5f5f7;--ink2:#d1d1d6;--mute:#98989f;--line:rgba(84,84,88,.5);--fill:rgba(118,118,128,.24);
+  --accent:#ec6a48;--ok:#30d158;--warn:#ff9f0a;--glass:rgba(22,22,24,.72);--shadow:none;--cover-dim:brightness(.72) saturate(.9);color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue","Microsoft YaHei",system-ui,sans-serif;-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+main{max-width:680px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom))}
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.top{padding:calc(14px + env(safe-area-inset-top)) 0 6px}
+.back{border:0;background:none;color:var(--accent);font-size:17px;padding:4px 0;margin-left:-2px}
+.eyebrow{font-size:13px;color:var(--mute);font-weight:500;margin-top:8px}
+.lt{font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:2px 0 6px}
+.sh{display:flex;align-items:baseline;gap:8px;font-size:21px;font-weight:700;letter-spacing:-.01em;margin:28px 2px 10px}
+.sh .sp{flex:1}.sh small{font-size:14px;font-weight:500;color:var(--mute)}
+.mute{color:var(--mute);font-size:13px}
+.hero{position:relative;margin:0 -16px;height:min(56vh,420px);min-height:320px;overflow:hidden;border-radius:0 0 30px 30px;background:#f3c9a8}
+.hero svg.cover{position:absolute;inset:0;width:100%;height:100%;filter:var(--cover-dim)}
+.hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.12) 0,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 50%,rgba(0,0,0,.5) 100%)}
+.hero .tools{position:absolute;top:calc(12px + env(safe-area-inset-top));right:16px;display:flex;gap:8px}
+.glassbtn{width:36px;height:36px;border-radius:50%;border:0;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.24);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.glassbtn .ic{width:18px;height:18px}
+.hero .txt{position:absolute;left:20px;right:20px;bottom:26px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.2)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.24);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.hero h1{font-size:38px;line-height:1.1;letter-spacing:-.025em;margin:12px 0 6px;font-weight:700}
+.hero .sub{font-size:15px;opacity:.94}
+.strip{display:flex;gap:8px;overflow-x:auto;margin:14px -16px 0;padding:2px 16px 6px;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.strip button{flex:none;width:52px;border:0;border-radius:16px;background:var(--card);box-shadow:var(--shadow);padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:1px;position:relative}
+.strip button small{font-size:11px;color:var(--mute);font-weight:500}
+.strip button b{font-size:19px;letter-spacing:-.02em}
+.strip button.on{background:var(--accent);color:#fff}.strip button.on small{color:rgba(255,255,255,.85)}
+.strip button .dot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.strip button.on .dot{background:#fff}
+.strip button .tr{position:absolute;top:-4px;right:-2px;font-size:12px}
+.card{background:var(--card);border-radius:20px;padding:16px;margin:12px 0;box-shadow:var(--shadow)}
+.card h3{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
+.group{background:var(--card);border-radius:16px;margin:10px 0;overflow:hidden;box-shadow:var(--shadow)}
+.gr{display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:54px;width:100%;border:0;background:none;text-align:left;color:var(--ink)}
+.group>*+*{border-top:.5px solid var(--line)}
+.gr .gm{flex:1;min-width:0}.gr .gm b{font-weight:600;font-size:16px}
+.gr .gm .mute{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gr .chev{color:var(--mute);opacity:.6;font-size:20px;line-height:1}
+.gr .amt{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px}
+.em{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:24px;flex:none;background:color-mix(in srgb,var(--accent) 11%,transparent)}
+.chip{display:inline-flex;align-items:center;gap:3px;background:var(--fill);color:var(--ink2);border-radius:8px;padding:2px 8px;font-size:12px;margin:3px 4px 0 0;font-weight:500}
+.chip.hot{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.chip.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.thaw{display:flex;gap:12px;align-items:flex-start;background:color-mix(in srgb,#4da3ff 12%,var(--card));border-radius:18px;padding:14px 16px;margin:14px 0}
+.thaw .e{font-size:24px;line-height:1.2}
+.thaw b{display:block;font-size:15px}
+.meal-h{display:flex;align-items:baseline;gap:8px;margin:24px 2px 8px}
+.meal-h b{font-size:21px;letter-spacing:-.01em}
+.meal-h span{flex:1}
+.ov .gr{align-items:flex-start}
+.ov .d{flex:none;width:44px;text-align:center}
+.ov .d b{display:block;font-size:20px;letter-spacing:-.02em;line-height:1.1}
+.ov .d small{font-size:11px;color:var(--mute)}
+.ov .ml{font-size:14px;color:var(--ink2);line-height:1.5}
+.ov .ml i{font-style:normal;color:var(--mute);margin-right:4px}
+.ov .today{color:var(--accent)}
+.check{display:flex;gap:12px;align-items:center;padding:11px 16px}
+.check input{appearance:none;-webkit-appearance:none;width:22px;height:22px;border-radius:50%;border:1.6px solid color-mix(in srgb,var(--mute) 70%,transparent);margin:0;flex:none;transition:background .15s}
+.check input:checked{background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat;border-color:var(--accent)}
+.check .gm{flex:1;min-width:0}
+.check.done .gm b,.check.done .amt{color:var(--mute);text-decoration:line-through}
+.seg{position:sticky;top:0;z-index:6;margin:0 -16px;padding:calc(8px + env(safe-area-inset-top)) 16px 8px;background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+.seg .in{display:flex;gap:2px;background:var(--fill);border-radius:11px;padding:2px;overflow-x:auto;scrollbar-width:none}
+.seg button{flex:1 0 auto;border:0;background:none;padding:6px 12px;border-radius:9px;font-size:14px;font-weight:500;color:var(--ink2);white-space:nowrap}
+.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.big{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bar{height:8px;border-radius:4px;background:var(--fill);overflow:hidden;margin:12px 0 4px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:15px}
+.kv span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.search{width:100%;font:inherit;font-size:16px;padding:10px 14px;border:0;border-radius:12px;background:var(--fill);color:var(--ink);margin:4px 0 4px}
+.dish-hero{margin:4px 0 6px;font-size:64px;line-height:1}
+.steps{list-style:none;padding:0;margin:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:14px;padding:12px 0;border-top:.5px solid var(--line);font-size:16px;line-height:1.6}
+.steps li:first-child{border-top:0;padding-top:4px}
+.steps li::before{content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center;margin-top:1px}
+.uses{margin:0;padding:0;list-style:none}
+.uses li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:.5px solid var(--line)}
+.uses li:first-child{border-top:0}
+.cta{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:14px;padding:13px;border-radius:14px;border:0;background:var(--accent);color:#fff;font-weight:600;font-size:16px}
+.cta.done{background:var(--ok)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom));background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--line)}
+.tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10px;font-weight:500;color:var(--mute);padding:2px 0}
+.tabbar button.on{color:var(--accent)}
+</style>
+</head>
+<body>
+<main id="main"></main>
+<nav class="tabbar" id="tabs"></nav>
+<script>
+const D=/*__DATA__*/null;
+const DAYS=D.days,DI=D.dishes,WEEK='日一二三四五六';
+const KEY='chisha:'+(D.created||'');
+const store={get(k,d){try{const v=localStorage.getItem(KEY+':'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(KEY+':'+k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+const dObj=s=>new Date(s+'T00:00:00+08:00');
+const wk=s=>'周'+WEEK[new Date(s+'T00:00:00Z').getUTCDay()];
+const md=s=>+s.slice(5,7)+'月'+(+s.slice(8,10))+'日';
+const yuan=v=>'¥'+(Math.round(v*10)/10).toFixed(v>=100?0:1).replace(/\.0$/,'');
+const fmtQ=(v,u)=>{if(u==='个'||u==='盒'||u==='把'||u==='张'||u==='根'||u==='棵')return Math.ceil(v-0.05)+u;return (Math.round(v*10)/10)+u};
+// 菜的小图标：看主料
+function emo(n){const d=DI[n]||{},i=(d.ings||[]).join(' ');
+  if(d.type==='soup')return '🍲';if(d.type==='breakfast')return /粥/.test(n)?'🥣':/饼|面/.test(n)?'🥞':'🍳';
+  if(/虾/.test(i))return '🦐';if(/鱼/.test(i))return '🐟';if(/牛|羊/.test(i))return '🥩';if(/鸡翅|鸡腿|整鸡|鸡胸/.test(i))return '🍗';
+  if(/排骨|五花|猪/.test(i))return '🍖';if(/豆腐/.test(i))return '🧈';if(/蛋/.test(i))return '🥚';
+  if(/番茄/.test(i))return '🍅';if(/茄子/.test(i))return '🍆';if(/土豆/.test(i))return '🥔';if(/胡萝卜/.test(i))return '🥕';if(/玉米/.test(i))return '🌽';if(/菇|木耳/.test(i))return '🍄';if(/黄瓜|丝瓜/.test(i))return '🥒';if(/辣椒|青椒/.test(i))return '🫑';
+  return '🥬'}
+const TYPE={main:'主菜',side:'小荤',veg:'素菜',soup:'汤',breakfast:'早餐'};
+const ICON={
+  today:'<path d="M4 13h16a8 8 0 0 1-16 0z"/><path d="M8 9c0-1.5 1.5-1.5 1.5-3S8 4.5 8 3M12 9c0-1.5 1.5-1.5 1.5-3S12 4.5 12 3M16 9c0-1.5 1.5-1.5 1.5-3S16 4.5 16 3"/>',
+  menu:'<rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h3M8 17h6"/>',
+  shop:'<path d="M5 8h14l-1.3 10.5a2 2 0 0 1-2 1.5H8.3a2 2 0 0 1-2-1.5z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/>',
+  book:'<path d="M5 4.5h10.5a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10.5M9 8.5h6"/>',
+  theme:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/>',
+};
+const ic=n=>`<svg class="ic" viewBox="0 0 24 24">${ICON[n]}</svg>`;
+
+// ── 封面：暖色渐变 + 一碗热饭 + 散落的食材，按日期换种子，每天的图都不一样 ──
+function rng(s){s=s>>>0||1;return()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return((s>>>0)%100000)/100000}}
+function hash(str){let h=2166136261;for(const c of String(str))h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0}
+const PAL=[['#f6c7a1','#fdebd9','#d9502f'],['#f3d39b','#fff2dc','#c8662a'],['#f2b8a8','#fde9e2','#c9473f'],['#c9dbb0','#f3f6e6','#4f7d3f'],['#f5cf9f','#fff1dd','#b85a2a']];
+function cover(day,treat){const r=rng(hash(day+(D.created||''))),f=n=>n.toFixed(1),W=800,H=760,p=PAL[Math.floor(r()*PAL.length)];
+  let s=`<defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p[0]}"/><stop offset="1" stop-color="${p[1]}"/></linearGradient>
+  <radialGradient id="g2"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p[2]}"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></linearGradient></defs>
+  <rect width="${W}" height="${H}" fill="url(#g1)"/><circle cx="${W/2}" cy="${H*.42}" r="330" fill="url(#g2)"/>`;
+  // 桌布格纹
+  for(let x=-40;x<W;x+=80)s+=`<rect x="${x}" y="${H*.72}" width="40" height="${H*.28}" fill="${p[2]}" opacity=".07"/>`;
+  s+=`<rect y="${H*.72}" width="${W}" height="${H*.28}" fill="${p[2]}" opacity=".06"/>`;
+  // 散落的食材
+  const items=[(x,y,k)=>`<circle cx="${x}" cy="${y}" r="${f(26*k)}" fill="#e2483a"/><path d="M${f(x-10*k)} ${f(y-24*k)} l${f(10*k)} ${f(8*k)} l${f(10*k)} ${f(-8*k)}" fill="none" stroke="#3f8a3a" stroke-width="${f(5*k)}" stroke-linecap="round"/>`,
+    (x,y,k)=>`<ellipse cx="${x}" cy="${y}" rx="${f(40*k)}" ry="${f(16*k)}" transform="rotate(${f(r()*80-40)} ${x} ${y})" fill="#5aa04a"/><path d="M${f(x-34*k)} ${y} L${f(x+34*k)} ${y}" stroke="#3d7a35" stroke-width="${f(2.5*k)}" transform="rotate(${f(r()*80-40)} ${x} ${y})"/>`,
+    (x,y,k)=>`<ellipse cx="${x}" cy="${y}" rx="${f(22*k)}" ry="${f(28*k)}" fill="#fbf6ea" stroke="#e8dcc0" stroke-width="2"/>`,
+    (x,y,k)=>`<path d="M${x} ${y} q${f(30*k)} ${f(-6*k)} ${f(52*k)} ${f(18*k)}" fill="none" stroke="#d93a2b" stroke-width="${f(13*k)}" stroke-linecap="round"/><path d="M${x} ${y} l${f(-12*k)} ${f(-6*k)}" stroke="#3f8a3a" stroke-width="${f(5*k)}" stroke-linecap="round"/>`,
+    (x,y,k)=>`<circle cx="${x}" cy="${y}" r="${f(9*k)}" fill="#f1e2c2"/><circle cx="${f(x+16*k)}" cy="${f(y+6*k)}" r="${f(8*k)}" fill="#f1e2c2"/><circle cx="${f(x+6*k)}" cy="${f(y-12*k)}" r="${f(7*k)}" fill="#f1e2c2"/>`];
+  const spots=[[90,140],[700,120],[110,520],[690,560],[60,330],[740,340],[200,640],[600,660],[250,90],[560,80]];
+  spots.forEach(([x,y],i)=>{const k=.8+r()*.6;s+=`<g opacity=".92">${items[Math.floor(r()*items.length)](x+r()*30-15,y+r()*30-15,k)}</g>`});
+  // 碗
+  const cx=W/2,cy=H*.5;
+  for(let k=0;k<3;k++){const x=cx-60+k*60;s+=`<path d="M${x} ${f(cy-150)} c-26 -30 26 -50 0 -84 c-26 -30 26 -50 0 -84" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="9" stroke-linecap="round"/>`}
+  s+=`<ellipse cx="${cx}" cy="${f(cy+150)}" rx="230" ry="26" fill="#000" opacity=".1"/>`;
+  s+=`<ellipse cx="${cx}" cy="${f(cy-40)}" rx="200" ry="70" fill="#fff8ec"/>`;
+  for(let k=0;k<70;k++){const a=r()*Math.PI*2,rr=Math.sqrt(r());s+=`<ellipse cx="${f(cx+Math.cos(a)*rr*170)}" cy="${f(cy-60+Math.sin(a)*rr*45)}" rx="9" ry="5" transform="rotate(${f(r()*180)} ${f(cx+Math.cos(a)*rr*170)} ${f(cy-60+Math.sin(a)*rr*45)})" fill="#fff" stroke="#efe4cf" stroke-width="1.2"/>`}
+  if(treat)s+=`<ellipse cx="${cx+40}" cy="${f(cy-78)}" rx="62" ry="26" fill="#a5512c"/><ellipse cx="${cx-50}" cy="${f(cy-72)}" rx="44" ry="20" fill="#b9643a"/>`;
+  else s+=`<ellipse cx="${cx+50}" cy="${f(cy-76)}" rx="46" ry="16" fill="#5aa04a" transform="rotate(-12 ${cx+50} ${f(cy-76)})"/><circle cx="${cx-40}" cy="${f(cy-74)}" r="20" fill="#e2483a"/>`;
+  s+=`<path d="M${cx-210} ${f(cy-40)} a210 190 0 0 0 420 0 z" fill="url(#g3)"/><path d="M${cx-210} ${f(cy-40)} a210 190 0 0 0 420 0 z" fill="${p[2]}" opacity=".85"/>`;
+  s+=`<path d="M${cx-150} ${f(cy+20)} q150 70 300 0" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>`;
+  s+=`<rect x="${cx-70}" y="${f(cy+138)}" width="140" height="18" rx="9" fill="${p[2]}"/>`;
+  // 筷子
+  s+=`<g transform="rotate(-24 ${cx+150} ${f(cy-150)})"><rect x="${cx+110}" y="${f(cy-330)}" width="12" height="330" rx="6" fill="#7a4a2a"/><rect x="${cx+134}" y="${f(cy-320)}" width="12" height="330" rx="6" fill="#8b5a36"/></g>`;
+  return `<svg class="cover" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${s}</svg>`}
+
+let DAY=store.get('day',null);
+{const t=DAYS.findIndex(d=>d.date===today);if(DAY==null||!DAYS[DAY]||t>=0&&!sessionStorage.getItem('picked'))DAY=t>=0?t:(today<DAYS[0].date?0:DAYS.length-1)}
+const head=(title,eyebrow,back)=>`<div class="top">${back?`<button class="back" data-back="${back}">‹ 返回</button>`:''}<div class="eyebrow">${esc(eyebrow||'')}</div><div class="lt">${esc(title)}</div></div>`;
+const dishRow=(n,sub)=>{const d=DI[n]||{};return `<button class="gr" data-dish="${esc(n)}"><div class="em">${emo(n)}</div><div class="gm"><b>${esc(n)}</b>${(d.tags||'').includes('spicy')?' <span class="chip hot">辣</span>':''}<div class="mute">${esc(sub!=null?sub:(d.use||[]).join('、'))}</div></div><span class="chev">›</span></button>`};
+
+function rel(s){if(s===today)return '今天';const n=Math.round((dObj(s)-dObj(today))/864e5);return n===1?'明天':n===-1?'昨天':n===2?'后天':md(s)}
+function pageToday(){const d=DAYS[DAY];if(!d)return '';const ms=Object.entries(d.meals).filter(([,l])=>l.length);
+  let h=`<div class="hero">${cover(d.date,d.treat)}<div class="shade"></div><div class="tools"><button class="glassbtn" data-themeb aria-label="深浅色">${ic('theme')}</button></div>
+    <div class="txt"><span class="pill">${md(d.date)} ${wk(d.date)} · 第 ${DAY+1}/${DAYS.length} 天${d.treat?' · 改善日 🍖':''}</span><h1>${rel(d.date)}吃啥</h1><div class="sub">${ms.map(([m,l])=>m+' '+l.length+' 道').join(' · ')}${D.people>1?' · '+D.people+' 人':''}</div></div></div>`;
+  h+='<div class="strip">'+DAYS.map((x,i)=>`<button data-day="${i}" class="${i===DAY?'on':''}">${x.treat?'<span class="tr">🍖</span>':''}<small>${x.date===today?'今天':wk(x.date)}</small><b>${+x.date.slice(8,10)}</b>${x.date===today?'<span class="dot"></span>':''}</button>`).join('')+'</div>';
+  if(d.thaw)h+=`<div class="thaw"><div class="e">❄️</div><div><b>${d.date===today?'今晚':md(d.date)+'晚上'}提前准备</b><span style="font-size:14px">${esc(d.thaw)}</span></div></div>`;
+  ms.forEach(([m,l])=>{const c=l.reduce((a,x)=>a+((DI[x]||{}).cost||0),0)*D.people;
+    h+=`<div class="meal-h"><b>${esc(m)}</b><span></span><small class="mute">约 ${yuan(c)}</small></div><div class="group">${l.map(x=>dishRow(x)).join('')}</div>`});
+  if(D.people>1)h+=`<div class="mute" style="margin:8px 2px">做法里的用量是一人份，${D.people} 个人就乘 ${D.people}。</div>`;
+  const nx=DAYS[DAY+1];if(nx)h+=`<div class="sh">${rel(nx.date)}<span class="sp"></span><small><a href="#" data-day="${DAY+1}">看看 ›</a></small></div><div class="card" style="font-size:15px">${Object.entries(nx.meals).filter(([,l])=>l.length).map(([m,l])=>`<div><span class="mute">${esc(m)}</span>　${l.map(esc).join('、')}</div>`).join('')}</div>`;
+  return h}
+
+function pageMenu(){let h=head('菜单',`${md(DAYS[0].date)} – ${md(DAYS[DAYS.length-1].date)} · ${DAYS.length} 天`);
+  for(let w=0;w<D.weeks;w++){const ds=DAYS.slice(w*7,w*7+7);if(!ds.length)break;
+    h+=`<div class="sh">第 ${w+1} 周<span class="sp"></span><small>菜钱约 ${yuan(ds.reduce((a,x)=>a+x.cost,0))}</small></div><div class="group ov">`+ds.map((d,k)=>{const i=w*7+k;
+      return `<button class="gr" data-day="${i}" data-go="today"><div class="d ${d.date===today?'today':''}"><small>${d.date===today?'今天':wk(d.date)}</small><b>${+d.date.slice(8,10)}</b></div><div class="gm">${d.treat?'<span class="chip hot" style="margin:0 0 4px">改善日 🍖</span>':''}${Object.entries(d.meals).filter(([,l])=>l.length).map(([m,l])=>`<div class="ml"><i>${esc(m.slice(0,1))}</i>${l.map(esc).join('、')}</div>`).join('')}</div><span class="chev">›</span></button>`}).join('')+'</div>'}
+  if((D.like||[]).length||(D.dislike||[]).length)h+=`<div class="mute" style="margin:12px 2px">${D.like.length?'爱吃：'+D.like.map(esc).join('、'):''}${D.like.length&&D.dislike.length?' · ':''}${D.dislike.length?'不吃：'+D.dislike.map(esc).join('、'):''}</div>`;
+  return h}
+
+let WK=store.get('wk',null);if(WK==null||WK>=D.weeks)WK=Math.max(0,Math.min(D.weeks-1,Math.floor(Math.max(0,(dObj(today)-dObj(DAYS[0].date))/864e5)/7)));
+const GROUPS=[['耐放，每周买一次','🧺 这周一次买齐'],['每周买一次，按一顿的量分袋冷冻','🧊 买回来分袋冷冻'],['放不久，每3–4天买一次','🥬 放不久，3–4 天买一次'],['吃的当天买新鲜的','🐟 吃的当天买新鲜的']];
+function pageShop(){let h=D.weeks>1?`<div class="seg"><div class="in">${Array.from({length:D.weeks},(_,w)=>`<button data-wk="${w}" class="${w===WK?'on':''}">第 ${w+1} 周</button>`).join('')}</div></div>`:'';
+  const ds=DAYS.slice(WK*7,WK*7+7);
+  h+=head('买菜',ds.length?`${md(ds[0].date)} – ${md(ds[ds.length-1].date)}`:'');
+  const rows=D.shop.filter(x=>x.q[WK]>0),sum=rows.reduce((a,x)=>a+x.q[WK]*x.price,0),got=rows.filter(x=>store.get('b:'+WK+':'+x.ing,false));
+  h+=`<div class="card"><div class="stats"><div><div class="mute">这周菜钱</div><div class="big">${yuan(sum)}</div></div><div><div class="mute">要买</div><div class="big">${rows.length} 样</div></div><div><div class="mute">已买</div><div class="big">${got.length} 样</div></div></div><div class="bar"><i style="width:${rows.length?got.length/rows.length*100:0}%"></i></div></div>`;
+  GROUPS.forEach(([k,t])=>{const g=rows.filter(x=>x.how===k);if(!g.length)return;
+    h+=`<div class="sh" style="font-size:17px;margin-top:22px">${t}</div><div class="group">`+g.map(x=>{const key='b:'+WK+':'+x.ing,on=store.get(key,false);
+      return `<label class="check${on?' done':''}"><input type="checkbox" data-k="${esc(key)}"${on?' checked':''}><div class="gm"><b>${esc(x.ing)}</b> <span class="mute">${fmtQ(x.q[WK],x.unit)}</span><div class="mute">${yuan(x.price)}/${esc(x.unit)}${x.est?' · 估算价':''}</div></div><span class="amt">${yuan(x.q[WK]*x.price)}</span></label>`}).join('')+'</div>'});
+  if(WK===0&&D.fixed.length)h+=`<div class="sh" style="font-size:17px;margin-top:22px">🍚 米油调料<span class="sp"></span><small>第一周买齐</small></div><div class="group">`+D.fixed.map(([n,q,a,note])=>{const key='b:f:'+n,on=store.get(key,false);return `<label class="check${on?' done':''}"><input type="checkbox" data-k="${esc(key)}"${on?' checked':''}><div class="gm"><b>${esc(n)}</b><div class="mute">${esc(q)}</div></div><span class="amt">${yuan(a)}</span></label>`}).join('')+'</div>';
+  const T=D.totals;if(T){const total=T.food+T.fixed+T.fruit;
+    h+=`<div class="sh">花费</div><div class="card"><div class="kv"><span>菜钱</span><span>${yuan(T.food)}</span></div>${T.fixed?`<div class="kv"><span>米油调料</span><span>${yuan(T.fixed)}</span></div>`:''}${T.fruit?`<div class="kv"><span>水果（有富余）</span><span>${yuan(T.fruit)}</span></div>`:''}
+      <div class="kv" style="border-top:.5px solid var(--line);margin-top:4px;padding-top:10px"><span><b>总花费</b></span><span>${yuan(total)}</span></div><div class="kv"><span>预算</span><span>${esc(D.budget_text)}</span></div><div class="kv"><span>结余</span><span style="color:${D.budget-total<0?'var(--accent)':'var(--ok)'}">${yuan(D.budget-total)}</span></div>
+      <div class="bar"><i style="width:${Math.min(100,total/D.budget*100)}%"></i></div></div>`}
+  (D.notes||[]).forEach(n=>h+=`<div class="mute" style="margin:6px 2px">⚠ ${esc(n)}</div>`);
+  h+=`<div class="mute" style="margin:14px 2px">价格：${D.price_date?'上海市政府价格信息表 '+esc(D.price_date)+' 全市均价':'内置参考价'}；盒马、叮咚以 App 为准。</div>`;
+  return h}
+
+let Q='';
+function pageBook(){const ns=Object.keys(DI);let h=head('做法',`这份菜单用到 ${ns.length} 道菜`)+`<input class="search" id="q" placeholder="搜菜名或食材" value="${esc(Q)}">`;
+  const hit=n=>!Q||n.includes(Q)||(DI[n].ings||[]).some(i=>i.includes(Q))||(DI[n].use||[]).join().includes(Q);
+  let any=false;
+  ['main','side','veg','soup','breakfast'].forEach(t=>{const l=ns.filter(n=>DI[n].type===t&&hit(n));if(!l.length)return;any=true;
+    h+=`<div class="sh" style="font-size:17px;margin-top:22px">${TYPE[t]}<span class="sp"></span><small>${l.length} 道</small></div><div class="group">${l.map(n=>dishRow(n)).join('')}</div>`});
+  return h+(any?'':'<div class="card mute">没有找到</div>')}
+
+let DISH=null;
+function pageDish(){const n=DISH,d=DI[n];if(!d)return pageBook();
+  const when=[];DAYS.forEach((x,i)=>Object.entries(x.meals).forEach(([m,l])=>{if(l.includes(n))when.push([i,x.date,m])}));
+  const done=store.get('cook:'+n,false);
+  let h=head(n,TYPE[d.type]||'','x')+`<div class="dish-hero">${emo(n)}</div><div>${(d.tags||'').includes('spicy')?'<span class="chip hot">🌶 辣</span>':''}${(d.tags||'').includes('stew')?'<span class="chip">⏱ 要炖 40 分钟以上</span>':''}<span class="chip">一人份约 ${yuan(d.cost)}</span></div>`;
+  h+=`<div class="sh">用料<span class="sp"></span><small>一人份${D.people>1?'，'+D.people+' 人乘 '+D.people:''}</small></div><div class="card"><ul class="uses">${d.use.map(u=>{const m=u.match(/^(\S+)\s+(.+)$/);return m?`<li><span>${esc(m[1])}</span><span class="mute" style="font-size:15px">${esc(m[2])}</span></li>`:`<li><span>${esc(u)}</span></li>`}).join('')}</ul></div>`;
+  h+=`<div class="sh">调料</div><div class="card" style="font-size:15px">${esc(d.season)}</div>`;
+  h+=`<div class="sh">做法</div><div class="card"><ol class="steps">${d.steps.map(s=>`<li><span>${esc(s)}</span></li>`).join('')}</ol><button class="cta${done?' done':''}" data-cook="${esc(n)}">${done?'✓ 做过了':'做好了，打个勾'}</button></div>`;
+  if(when.length)h+=`<div class="sh">排在</div><div class="group">${when.map(([i,ds,m])=>`<button class="gr" data-day="${i}" data-go="today"><div class="gm"><b>${md(ds)} ${wk(ds)}</b> <span class="mute">${esc(m)}</span></div>${ds===today?'<span class="chip hot">今天</span>':''}<span class="chev">›</span></button>`).join('')}</div>`;
+  return h}
+
+const PAGES={today:pageToday,menu:pageMenu,shop:pageShop,book:pageBook,dish:pageDish};
+const TABS=[['today','今天','today'],['menu','菜单','menu'],['shop','买菜','shop'],['book','做法','book']];
+let cur='today',scrollMem={};
+function fromHash(){const h=decodeURIComponent(location.hash.slice(1));if(h.startsWith('dish/')){DISH=h.slice(5);return DI[DISH]?'dish':'book'}return PAGES[h]?h:null}
+cur=fromHash()||'today';
+function render(){const on=cur==='dish'?(store.get('from','book')):cur;
+  document.getElementById('tabs').innerHTML=TABS.map(([k,n,i])=>`<button data-go="${k}" class="${k===on?'on':''}">${ic(i)}<span>${n}</span></button>`).join('');
+  document.getElementById('main').innerHTML=PAGES[cur]()}
+function go(k,arg){if(k==='dish'){store.set('from',TABS.some(t=>t[0]===cur)?cur:store.get('from','book'));scrollMem[cur]=scrollY;DISH=arg;history.pushState({inapp:1},'','#dish/'+encodeURIComponent(arg));cur='dish';render();scrollTo(0,0);return}
+  if(k===cur){scrollTo({top:0,behavior:'smooth'});return}
+  cur=k;history.pushState({inapp:1},'','#'+k);render();scrollTo(0,0)}
+addEventListener('popstate',()=>{const was=cur;cur=fromHash()||'today';render();scrollTo(0,was==='dish'?(scrollMem[cur]||0):0)});
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-themeb]')){const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark';store.set('theme',r.dataset.theme);return}
+  const bk=e.target.closest('[data-back]');if(bk){if(history.state&&history.state.inapp)history.back();else go(store.get('from','book'));return}
+  const ds=e.target.closest('[data-dish]');if(ds){go('dish',ds.dataset.dish);return}
+  const dy=e.target.closest('[data-day]');if(dy){e.preventDefault();DAY=+dy.dataset.day;store.set('day',DAY);try{sessionStorage.setItem('picked','1')}catch(_){}
+    if(dy.dataset.go){go(dy.dataset.go);if(cur==='today')render();return}render();scrollTo({top:0,behavior:'smooth'});return}
+  const w=e.target.closest('[data-wk]');if(w){WK=+w.dataset.wk;store.set('wk',WK);render();return}
+  const ck=e.target.closest('[data-cook]');if(ck){const k='cook:'+ck.dataset.cook;store.set(k,!store.get(k,false));render();return}
+  const tb=e.target.closest('[data-go]');if(tb){go(tb.dataset.go);return}});
+document.addEventListener('change',e=>{const c=e.target.closest('input[data-k]');if(c){store.set(c.dataset.k,c.checked);if(cur==='shop'){const y=scrollY;render();scrollTo(0,y)}}});
+document.addEventListener('input',e=>{if(e.target.id==='q'){Q=e.target.value.trim();const p=e.target.selectionStart;render();const q=document.getElementById('q');q.focus();q.setSelectionRange(p,p)}});
+{const th=store.get('theme',null);if(th)document.documentElement.dataset.theme=th}
+history.replaceState({},'',location.hash||'#today');
+render();
+</script>
+</body>
+</html>

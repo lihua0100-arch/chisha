@@ -26,7 +26,8 @@ import zipfile
 from xml.sax.saxutils import escape
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 import meal_plan_dishes as M  # noqa: E402
 
 TZ = dt.timezone(dt.timedelta(hours=8))
@@ -804,6 +805,20 @@ def thaw_note(plan, i):
     return "；".join(parts)
 
 
+FISH = ("带鱼", "黄鱼", "草鱼", "鲫鱼", "花鲢鱼头", "基围虾")
+PERISHABLE = ("青菜", "鸡毛菜", "菠菜", "生菜", "空心菜", "米苋", "韭菜", "豆芽", "豆腐", "番茄", "黄瓜", "茄子", "丝瓜")
+
+
+def buy_how(ing):
+    if ing in FISH:
+        return "吃的当天买新鲜的"
+    if ing in M.MEAT_SHORT:
+        return "每周买一次，按一顿的量分袋冷冻"
+    if ing in PERISHABLE:
+        return "放不久，每3–4天买一次"
+    return "耐放，每周买一次"
+
+
 def cond_text(name, notes):
     t = M_BY[name][5]
     if name in notes:
@@ -978,15 +993,7 @@ def build_workbook(path, a, pl, plan, P, gov, warn, fixed, totals):
         s3.set(r, cT, tot, st.get(fmt="0.0"), "SUM(%s%d:%s%d)" % (col_letter(3), r, col_letter(2 + weeks), r))
         s3.set(r, cP, price, st.get(color="0000FF", fmt="0.00"))
         s3.set(r, cA, tot * price, st.get(fmt="0.0"), "%s%d*%s%d" % (col_letter(cT), r, col_letter(cP), r))
-        if ing in M.MEAT_SHORT and ing not in ("带鱼", "黄鱼", "草鱼", "鲫鱼", "花鲢鱼头", "基围虾"):
-            how = "每周买一次，按一顿的量分袋冷冻"
-        elif ing in ("带鱼", "黄鱼", "草鱼", "鲫鱼", "花鲢鱼头", "基围虾"):
-            how = "吃的当天买新鲜的"
-        elif ing in ("青菜", "鸡毛菜", "菠菜", "生菜", "空心菜", "米苋", "韭菜", "豆芽", "豆腐", "番茄", "黄瓜", "茄子", "丝瓜"):
-            how = "放不久，每3–4天买一次"
-        else:
-            how = "耐放，每周买一次"
-        s3.set(r, cH, how, NL)
+        s3.set(r, cH, buy_how(ing), NL)
         r += 1
     ing_end = r - 1
     s3.set(r, 1, "食材小计", st.get(bold=True, fill=TOTAL))
@@ -1232,6 +1239,9 @@ def cmd_plan(a):
         "people": a.people, "meals": a.meals, "like": pl.likes, "dislike": pl.dislikes,
         "price_date": gov["date"] if gov else "", "cond_notes": pl.cond_notes,
         "days": [{"date": dates[i].isoformat(), "meals": plan[i]} for i in range(a.days)],
+        "name": a.name, "budget_text": a.budget_text, "totals": totals, "fixed": [list(x) for x in fixed],
+        "prices": {ing: list(P[ing]) for ing in M.ING if any(ing in M_BY[x][3] for day in plan for lst in day.values() for x in lst)},
+        "notes": [n for n in (getattr(a, "shrunk_note", ""),) if n],
     }
     with open(os.path.join(home_dir(), "current.json"), "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=1)
@@ -1273,6 +1283,126 @@ def cmd_plan(a):
         print("忌口只出现在调料里的，菜照排、调料注明不放：%s" % "、".join(sorted({w for v in pl.cond_notes.values() for w in v})))
     print("第一天（%s）：%s" % (dates[0], "；".join("%s %s" % (m, "、".join(l)) for m, l in plan[0].items())))
     print("提醒用户：今晚" + (thaw_note([{}] + plan, 0) or "不用提前准备"))
+    try:
+        url = publish(state)
+        if url:
+            print("在线菜谱（手机打开，比 Excel 好看）：%s" % url)
+    except Exception as e:  # 发布失败不影响 Excel
+        print("在线菜谱没发布成功：%s" % e)
+
+
+# ═══════════════════════════ 在线菜谱（单文件网页） ═══════════════════════════
+TYPE_CN = {"main": "主菜", "side": "小荤", "veg": "素菜", "soup": "汤", "breakfast": "早餐"}
+
+
+def web_payload(state):
+    """current.json → 网页数据：每天的菜、今晚要解冻什么、每道菜的做法、按周的买菜清单、花费。"""
+    plan = [d["meals"] for d in state["days"]]
+    ppl = state.get("people", 1)
+    P = state.get("prices")
+    if not P:  # 旧存档没存单价：用当前价（有缓存）
+        P = build_price_table(load_prices(True)[0])
+    cost = {x: sum(q * P[i][1] for i, q in M_BY[x][3].items() if i in P)
+            for day in plan for lst in day.values() for x in lst if x in M_BY}
+    names = []
+    for day in plan:
+        for lst in day.values():
+            names += [x for x in lst if x in M_BY and x not in names]
+    notes = state.get("cond_notes", {})
+    dishes = {x: {"type": M_BY[x][1], "tags": M_BY[x][2], "ings": list(M_BY[x][3]), "use": M_BY[x][4].split("\n"),
+                  "season": cond_text(x, notes).replace("\n", " "),
+                  "steps": [re.sub(r"^\d+[.、]\s*", "", t) for t in M_BY[x][6].split("\n") if t.strip()],
+                  "cost": round(cost.get(x, 0), 1)} for x in names}
+    weeks = math.ceil(len(plan) / 7)
+    qty = {}
+    for i, day in enumerate(plan):
+        for lst in day.values():
+            for x in lst:
+                for ing, q in M_BY.get(x, (0, 0, 0, {}))[3].items():
+                    qty.setdefault(ing, [0.0] * weeks)[i // 7] += q * ppl
+    order = list(M.ING)
+    shop = [{"ing": ing, "unit": P[ing][0], "q": [round(v, 2) for v in qty[ing]], "price": P[ing][1],
+             "est": not str(P[ing][2]).startswith("上海市政府"), "how": buy_how(ing)}
+            for ing in sorted(qty, key=order.index) if ing in P]
+    days = [{"date": d["date"], "meals": d["meals"], "thaw": thaw_note(plan, i), "treat": is_treat(d["meals"]),
+             "cost": round(sum(cost.get(x, 0) for lst in d["meals"].values() for x in lst) * ppl, 1)}
+            for i, d in enumerate(state["days"])]
+    return {"name": state.get("name") or "", "created": state.get("created", ""), "people": ppl,
+            "budget": state.get("budget"), "budget_text": state.get("budget_text") or "%g 元" % state.get("budget", 0),
+            "totals": state.get("totals"), "fixed": state.get("fixed") or [], "price_date": state.get("price_date", ""),
+            "like": state.get("like", []), "dislike": state.get("dislike", []), "notes": state.get("notes", []),
+            "days": days, "dishes": dishes, "shop": shop, "weeks": weeks}
+
+
+def build_web(state):
+    tpl = open(os.path.join(HERE, "meal_plan_template.html"), encoding="utf-8").read()
+    data = json.dumps(web_payload(state), ensure_ascii=False).replace("</", "<\\/")
+    return tpl.replace("/*__DATA__*/null", data)
+
+
+PUBLISH_CONF = ("/opt/data/.config/chisha/publish.json", "~/.hermes/.config/chisha/publish.json", "~/.config/chisha/publish.json")
+
+
+def publish_conf():
+    """发布配置（不进仓库）：{"base": "https://你的域名", "dirs": ["网站根目录", "另一种挂载路径"…]}。
+    也可以用环境变量 MEAL_PUBLIC_BASE / MEAL_PUBLISH_DIR 覆盖。"""
+    conf = {}
+    for c in [os.environ.get("MEAL_CONFIG")] + list(PUBLISH_CONF):
+        if c and os.path.isfile(os.path.expanduser(c)):
+            with open(os.path.expanduser(c), encoding="utf-8") as f:
+                conf = json.load(f)
+            break
+    base = os.environ.get("MEAL_PUBLIC_BASE") or conf.get("base")
+    dirs = [os.environ.get("MEAL_PUBLISH_DIR")] + [os.path.expanduser(d) for d in conf.get("dirs", [])]
+    root = next((d for d in dirs if d and os.path.isdir(d)), None)
+    return base, root
+
+
+def publish(state):
+    """发到 <网站根目录>/m/<随机串>/index.html；随机串存在本号的 meal-plans/publish.json，重发链接不变。
+    没配置发布地址（见 publish_conf）就跳过，返回 None。"""
+    base, root = publish_conf()
+    if not (base and root):
+        return None
+    pj = os.path.join(home_dir(), "publish.json")
+    try:
+        with open(pj, encoding="utf-8") as f:
+            token = json.load(f)["token"]
+    except (OSError, ValueError, KeyError):
+        token = ""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{12,40}", token or ""):
+        import secrets
+        token = secrets.token_urlsafe(12)
+    out = os.path.join(root, "m", token)
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as f:
+        f.write(build_web(state))
+    url = "%s/m/%s/" % (base.rstrip("/"), token)
+    with open(pj, "w", encoding="utf-8") as f:
+        json.dump({"token": token, "url": url, "published": now().isoformat(timespec="seconds")}, f, ensure_ascii=False)
+    return url
+
+
+def load_state():
+    try:
+        with open(os.path.join(home_dir(), "current.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def cmd_web(a):
+    state = load_state()
+    if not state:
+        print("这个微信号还没有生成过菜谱。先告诉我预算、天数、爱吃和不吃的，我来做一份。")
+        return
+    if a.output:
+        with open(a.output, "w", encoding="utf-8") as f:
+            f.write(build_web(state))
+        print("已生成 %s" % a.output)
+        return
+    url = publish(state)
+    print("在线菜谱：%s" % url if url else "没有配置发布地址（~/.config/chisha/publish.json）；加 -o 菜谱.html 生成本地文件。")
 
 
 def cmd_today(a):
@@ -1314,6 +1444,11 @@ def cmd_today(a):
     note = thaw_note(plan, idx)
     if note:
         print("\n今晚：" + note)
+    try:
+        with open(os.path.join(home_dir(), "publish.json"), encoding="utf-8") as f:
+            print("\n在线菜谱：" + json.load(f)["url"])
+    except (OSError, ValueError, KeyError):
+        pass
 
 
 def cmd_prices(a):
@@ -1343,6 +1478,8 @@ def cmd_dishes(a):
 def main():
     ap = argparse.ArgumentParser(description="家常菜谱生成器（上海菜价）")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("web", help="把当前菜谱发布成在线网页（链接固定）；-o 只生成本地文件")
+    p.add_argument("-o", "--output")
     p = sub.add_parser("plan", help="生成菜谱 Excel")
     p.add_argument("--budget", type=float, required=True, help="预算（元），默认是整段时间的总额")
     p.add_argument("--per", choices=("total", "week", "day"), default="total",
@@ -1369,7 +1506,7 @@ def main():
     pr.add_argument("--offline", action="store_true")
     sub.add_parser("dishes", help="列出菜库")
     a = ap.parse_args()
-    {"plan": cmd_plan, "today": cmd_today, "prices": cmd_prices, "dishes": cmd_dishes}[a.cmd](a)
+    {"plan": cmd_plan, "web": cmd_web, "today": cmd_today, "prices": cmd_prices, "dishes": cmd_dishes}[a.cmd](a)
 
 
 if __name__ == "__main__":
